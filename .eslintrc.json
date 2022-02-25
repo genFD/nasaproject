@@ -14,6 +14,7 @@
     "no-unused-vars": "warn",
     "no-console": "off",
     "func-names": "off",
-    "import/extensions": ["off", { "js": "always" }]
+    "import/extensions": ["off", { "js": "always" }],
+    "allowForLoopAfterthoughts": "on"
   }
 }

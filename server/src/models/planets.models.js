@@ -21,11 +21,11 @@ const filename = fileURLToPath(import.meta.url);
 
 const dirn = path.dirname(filename);
 
-const filepath = path.join(dirn, '..', '..', 'data', 'kepler_data.csv');
+const keplerData = path.join(dirn, '..', '..', 'data', 'kepler_data.csv');
 
 function loadPlanetsData() {
   return new Promise((resolve, reject) => {
-    fs.createReadStream(path.join(filepath))
+    fs.createReadStream(path.join(keplerData))
       .pipe(
         parse({
           comment: '#',
@@ -43,11 +43,13 @@ function loadPlanetsData() {
       })
       .on('end', () => {
         const keplerName = 'kepler_name';
-        console.log(habitablePlanets.map((planet) => planet[keplerName]));
+        console.table(habitablePlanets.map((planet) => planet[keplerName]));
         console.log(`${habitablePlanets.length} habitable planets found!`);
         resolve();
       });
   });
 }
-
-export { habitablePlanets, loadPlanetsData };
+function getAllPlanets() {
+  return habitablePlanets;
+}
+export { getAllPlanets, loadPlanetsData };
