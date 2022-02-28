@@ -15,6 +15,9 @@
     "no-console": "off",
     "func-names": "off",
     "import/extensions": ["off", { "js": "always" }],
-    "allowForLoopAfterthoughts": "on"
+    "no-use-before-define": [
+      "error",
+      { "functions": false, "classes": true, "variables": true }
+    ]
   }
 }
