@@ -4,9 +4,12 @@ import {
   abortLaunchById,
   scheduleNewLaunch,
 } from '../../models/launches.models.js';
+import getPagination from '../../services/query.js';
 
 async function httpGetAllLaunches(req, res) {
-  return res.status(200).json(await getAllLaunches());
+  const { skip, limit } = getPagination(req.query);
+  const launches = await getAllLaunches(skip, limit);
+  return res.status(200).json(launches);
 }
 async function httpAddNewLaunches(req, res) {
   const launch = req.body;

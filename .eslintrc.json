@@ -18,6 +18,16 @@
     "no-use-before-define": [
       "error",
       { "functions": false, "classes": true, "variables": true }
-    ]
+    ],
+    "no-restricted-syntax": [
+      "error",
+      "FunctionExpression",
+      "WithStatement",
+      "BinaryExpression[operator='in']"
+    ],
+    "dot-notation": ["error", { "allowPattern": "^[a-z]+(_[a-z]+)+$" }],
+    "no-useless-return": 0,
+    "no-await-in-loop": 0,
+    "eslint prefer-destructuring": "off"
   }
 }

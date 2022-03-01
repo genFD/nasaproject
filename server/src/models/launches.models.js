@@ -1,3 +1,4 @@
+import axios from 'axios';
 import Launches from './launches.mongo.js';
 import Planets from './planets.mongo.js';
 
@@ -6,17 +7,81 @@ const DEFAULT_FLIGHT_NUMBER = 100;
 // const launches = new Map();
 // let latestFlightNumber = 100;
 
-const launch = {
-  flightNumber: 100,
-  mission: 'Kepler Exploration',
-  rocket: 'Explorer IS1',
-  launchDate: new Date('December 27, 2030'),
-  target: 'Kepler-442 b',
-  customers: ['NASA', 'ZTM'],
-  upcoming: true,
-  success: true,
-};
-saveLaunch(launch);
+// const launch = {
+//   flightNumber: 100,
+//   mission: 'Kepler Exploration',
+//   rocket: 'Explorer IS1',
+//   launchDate: new Date('December 27, 2030'),
+//   target: 'Kepler-442 b',
+//   customers: ['NASA', 'ZTM'],
+//   upcoming: true,
+//   success: true,
+// };
+// saveLaunch(launch);
+
+const SPACEX_API_URL = 'https://api.spacexdata.com/v4/launches/query';
+
+async function populateLaunches() {
+  console.log('downloading launch data');
+  const response = await axios.post(SPACEX_API_URL, {
+    query: {},
+    options: {
+      pagination: false,
+      populate: [
+        {
+          path: 'rocket',
+          select: {
+            name: 1,
+          },
+        },
+        {
+          path: 'payloads',
+          select: {
+            customers: 1,
+          },
+        },
+      ],
+    },
+  });
+  if (response.status !== 200) {
+    console.log('problem downloading launch data');
+    throw new Error('launch data download failed');
+  }
+  const launchDocs = await response.data.docs;
+
+  for (const launchDoc of launchDocs) {
+    const { payloads } = launchDoc;
+
+    const customers = payloads.flatMap((payload) => payload.customers);
+
+    const launchData = {
+      flightNumber: launchDoc['flight_number'],
+      mission: launchDoc.name,
+      rocket: launchDoc.rocket.name,
+      date: launchDoc['date_local'],
+      upcoming: launchDoc.upcoming,
+      success: launchDoc.success,
+      customers,
+    };
+    console.table(
+      `${launchData.flightNumber} ${launchData.mission} ${launchData.date}`
+    );
+
+    await saveLaunch(launchData);
+  }
+}
+async function loadLaunchData() {
+  const firstLaunch = await findLaunch({
+    flightNumber: 1,
+    rocket: 'Falcon 1',
+    mission: 'FalconSat',
+  });
+  if (firstLaunch) {
+    console.log('Launch data already loaded');
+  } else {
+    await populateLaunches();
+  }
+}
 // launches.set(launch.flightNumber, launch);
 
 async function getLatestFlightNumber() {
@@ -27,22 +92,19 @@ async function getLatestFlightNumber() {
   }
   return latestLaunch.flightNumber;
 }
-async function getAllLaunches() {
+async function getAllLaunches(skip, limit) {
   // return Array.from(launches.values());
-  const allLaunches = await Launches.find({}, { _id: 0, __v: 0 });
+  const allLaunches = await Launches.find({}, { _id: 0, __v: 0 })
+    .skip(skip)
+    .sort({ flightNumber: 1 })
+    .limit(limit);
   return allLaunches;
 }
 
 async function saveLaunch(l) {
-  const planet = await Planets.findOne({
-    keplerName: launch.target,
-  });
-  if (!planet) {
-    throw new Error(`No matching planets found`);
-  }
   await Launches.findOneAndUpdate(
     {
-      flightNumber: launch.flightNumber,
+      flightNumber: l.flightNumber,
     },
     l,
     {
@@ -51,6 +113,12 @@ async function saveLaunch(l) {
   );
 }
 async function scheduleNewLaunch(nl) {
+  const planet = await Planets.findOne({
+    keplerName: nl.target,
+  });
+  if (!planet) {
+    throw new Error(`No matching planets found`);
+  }
   const newFlightNumber = (await getLatestFlightNumber()) + 1;
   const newLaunch = Object.assign(nl, {
     flightNumber: newFlightNumber,
@@ -73,8 +141,12 @@ async function scheduleNewLaunch(nl) {
 //     })
 //   );
 // }
+async function findLaunch(filter) {
+  const matchLaunch = await Launches.findOne(filter);
+  return matchLaunch;
+}
 async function checkIfLaunchExists(launchId) {
-  const existingLaunch = await Launches.findOne({
+  const existingLaunch = await findLaunch({
     flightNumber: launchId,
   });
   return existingLaunch;
@@ -101,4 +173,5 @@ export {
   checkIfLaunchExists,
   abortLaunchById,
   scheduleNewLaunch,
+  loadLaunchData,
 };
