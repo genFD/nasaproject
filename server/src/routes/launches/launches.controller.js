@@ -13,7 +13,6 @@ async function httpGetAllLaunches(req, res) {
 }
 async function httpAddNewLaunches(req, res) {
   const launch = req.body;
-  launch.launchDate = new Date(launch.launchDate);
 
   if (
     !launch.mission ||
@@ -25,7 +24,7 @@ async function httpAddNewLaunches(req, res) {
       error: 'You must complete all the required fields',
     });
   }
-
+  launch.launchDate = new Date(launch.launchDate);
   if (Number.isNaN(launch.launchDate)) {
     return res.status(400).json({
       error: 'Invalid launch date',
